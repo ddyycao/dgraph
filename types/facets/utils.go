@@ -138,7 +138,7 @@ func valAndValType(key, val string) (interface{}, api.Facet_ValType, error) {
 
 // FacetFor returns Facet for given key and val.
 func FacetFor(key, val string) (*api.Facet, error) {
-	v, vt, err := valAndValType(val)
+	v, vt, err := valAndValType(key, val)
 	if err != nil {
 		return nil, err
 	}
