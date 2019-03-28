@@ -18,6 +18,7 @@ package facets
 
 import (
 	"bytes"
+	"encoding/base64"
 	"fmt"
 	"math"
 	"sort"
@@ -83,9 +84,17 @@ func CopyFacets(fcs []*api.Facet, param *pb.FacetParams) (fs []*api.Facet) {
 }
 
 // valAndValType returns interface val and valtype for facet.
-func valAndValType(val string) (interface{}, api.Facet_ValType, error) {
+func valAndValType(key, val string) (interface{}, api.Facet_ValType, error) {
 	if len(val) == 0 { // empty string case
 		return "", api.Facet_STRING, nil
+	}
+	//enniu modify key=b 的时候尝试解析base64
+	if key == "b" {
+		if uq, err := strconv.Unquote(val); err == nil {
+			if binary, err := base64.StdEncoding.DecodeString(uq); err == nil {
+				return binary, api.Facet_BINARY, nil
+			}
+		}
 	}
 	// strings should be in quotes.
 	if len(val) >= 2 && val[0] == '"' && val[len(val)-1] == '"' {
@@ -190,6 +199,8 @@ func TypeIDFor(f *api.Facet) (types.TypeID, error) {
 		return types.DateTimeID, nil
 	case api.Facet_STRING:
 		return types.StringID, nil
+	case api.Facet_BINARY: //enniu modify
+		return types.BinaryID, nil
 	default:
 		return types.DefaultID, fmt.Errorf("Unrecognized facet type: %v", f.ValType)
 	}

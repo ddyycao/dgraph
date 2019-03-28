@@ -58,6 +58,7 @@ const (
 	Facet_FLOAT    Facet_ValType = 2
 	Facet_BOOL     Facet_ValType = 3
 	Facet_DATETIME Facet_ValType = 4
+	Facet_BINARY   Facet_ValType = 5
 )
 
 var Facet_ValType_name = map[int32]string{
@@ -66,6 +67,7 @@ var Facet_ValType_name = map[int32]string{
 	2: "FLOAT",
 	3: "BOOL",
 	4: "DATETIME",
+	5: "BINARY",
 }
 var Facet_ValType_value = map[string]int32{
 	"STRING":   0,
@@ -73,6 +75,7 @@ var Facet_ValType_value = map[string]int32{
 	"FLOAT":    2,
 	"BOOL":     3,
 	"DATETIME": 4,
+	"BINARY":   5,
 }
 
 func (x Facet_ValType) String() string {
