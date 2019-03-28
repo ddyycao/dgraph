@@ -1710,6 +1710,11 @@ func applyFacetsTree(postingFacets []*api.Facet, ftree *facetsTree) (bool, error
 			if err != nil {
 				return false, err
 			}
+
+			if fname == INRANGE { //enniu modify
+				return inRange(fc.Value, ftree.function.args)
+			}
+
 			if facetType != types.StringID {
 				return false, nil
 			}
@@ -1803,6 +1808,11 @@ func preprocessFilter(tree *pb.FilterTree) (*facetsTree, error) {
 		ftree.function.args = tree.Func.Args
 
 		fnType, fname := parseFuncTypeHelper(ftree.function.name)
+
+		if fname == INRANGE {
+			return ftree, nil
+		}
+
 		if len(tree.Func.Args) != 1 {
 			return nil, x.Errorf("One argument expected in %s, but got %d.",
 				fname, len(tree.Func.Args))
