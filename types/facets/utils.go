@@ -17,17 +17,17 @@
 package facets
 
 import (
+	"encoding/base64"
 	"fmt"
-	"math"
-	"sort"
-	"strconv"
-	"unicode"
-
 	"github.com/dgraph-io/dgo/protos/api"
 	"github.com/dgraph-io/dgraph/protos/pb"
 	"github.com/dgraph-io/dgraph/tok"
 	"github.com/dgraph-io/dgraph/types"
 	"github.com/dgraph-io/dgraph/x"
+	"math"
+	"sort"
+	"strconv"
+	"unicode"
 )
 
 // Sorts And validates the facets.
@@ -82,9 +82,19 @@ func CopyFacets(fcs []*api.Facet, param *pb.FacetParams) (fs []*api.Facet) {
 }
 
 // valAndValType returns interface val and valtype for facet.
-func valAndValType(val string) (interface{}, api.Facet_ValType, error) {
+func valAndValType(key, val string) (interface{}, api.Facet_ValType, error) {
+
 	if len(val) == 0 { // empty string case
 		return "", api.Facet_STRING, nil
+	}
+	//enniu modify key=b 的时候尝试解析base64
+	if key == "b" {
+		if uq, err := strconv.Unquote(val); err == nil {
+			if binary, err := base64.StdEncoding.DecodeString(uq); err == nil {
+				return binary, api.Facet_BINARY, nil
+			}
+		}
+
 	}
 	// strings should be in quotes.
 	if len(val) >= 2 && val[0] == '"' && val[len(val)-1] == '"' {
@@ -123,12 +133,13 @@ func valAndValType(val string) (interface{}, api.Facet_ValType, error) {
 	if t, err := types.ParseTime(val); err == nil {
 		return t, api.Facet_DATETIME, nil
 	}
+
 	return nil, api.Facet_STRING, x.Errorf("Could not parse the facet value : [%s]", val)
 }
 
 // FacetFor returns Facet for given key and val.
 func FacetFor(key, val string) (*api.Facet, error) {
-	v, vt, err := valAndValType(val)
+	v, vt, err := valAndValType(key, val)
 	if err != nil {
 		return nil, err
 	}
@@ -177,6 +188,8 @@ func TypeIDFor(f *api.Facet) (types.TypeID, error) {
 		return types.DateTimeID, nil
 	case api.Facet_STRING:
 		return types.StringID, nil
+	case api.Facet_BINARY:
+		return types.BinaryID, nil
 	default:
 		return types.DefaultID, fmt.Errorf("Unrecognized facet type: %v", f.ValType)
 	}

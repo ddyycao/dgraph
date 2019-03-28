@@ -24,6 +24,7 @@ const (
 	BoolID     = TypeID(api.Facet_BOOL)
 	DateTimeID = TypeID(api.Facet_DATETIME)
 	StringID   = TypeID(api.Facet_STRING)
+	BinaryID   = TypeID(api.Facet_BINARY)
 )
 
 type TypeID api.Facet_ValType
@@ -41,6 +42,8 @@ func ValTypeForTypeID(typId TypeID) api.Facet_ValType {
 		return api.Facet_DATETIME
 	case StringID:
 		return api.Facet_STRING
+	case BinaryID:
+		return api.Facet_BINARY
 	}
 	panic("Unhandled case in ValTypeForTypeID.")
 }
