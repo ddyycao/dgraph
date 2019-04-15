@@ -69,6 +69,7 @@ message Query {
 	bool expand_all = 10; // expand all language variants.
 
 	uint64 read_ts = 13;
+	int32 cache = 14;
 }
 
 message ValueList {
@@ -385,10 +386,10 @@ message RaftBatch {
 }
 
 service Raft {
-	rpc Heartbeat (api.Payload)   returns (stream api.Payload) {}
-	rpc RaftMessage (RaftBatch)   returns (api.Payload) {}
-	rpc JoinCluster (RaftContext) returns (api.Payload) {}
-	rpc IsPeer (RaftContext)      returns (PeerResponse) {}
+	rpc Heartbeat (api.Payload)        returns (stream api.Payload) {}
+	rpc RaftMessage (stream RaftBatch) returns (api.Payload) {}
+	rpc JoinCluster (RaftContext)      returns (api.Payload) {}
+	rpc IsPeer (RaftContext)           returns (PeerResponse) {}
 }
 
 service Zero {
@@ -421,6 +422,7 @@ service Worker {
 message Num {
 	uint64 val = 1;
 	bool read_only = 2;
+	bool forwarded = 3; // True if this request was forwarded by a peer.
 }
 
 message AssignedIds {

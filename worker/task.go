@@ -343,7 +343,7 @@ func (qs *queryState) handleValuePostings(ctx context.Context, args funcArgs) er
 	x.AssertTrue(width > 0)
 	span.Annotatef(nil, "Width: %d. NumGo: %d", width, numGo)
 
-	errCh := make(chan error, 1)
+	errCh := make(chan error, numGo)
 	outputs := make([]*pb.Result, numGo)
 	listType := schema.State().IsList(q.Attr)
 
@@ -534,7 +534,7 @@ func (qs *queryState) handleUidPostings(
 	x.AssertTrue(width > 0)
 	span.Annotatef(nil, "Width: %d. NumGo: %d", width, numGo)
 
-	errCh := make(chan error, 1)
+	errCh := make(chan error, numGo)
 	outputs := make([]*pb.Result, numGo)
 
 	calculate := func(start, end int) error {
@@ -693,6 +693,11 @@ func (qs *queryState) handleUidPostings(
 	return nil
 }
 
+const (
+	UseTxnCache = iota
+	NoTxnCache
+)
+
 // processTask processes the query, accumulates and returns the result.
 func processTask(ctx context.Context, q *pb.Query, gid uint32) (*pb.Result, error) {
 	span := otrace.FromContext(ctx)
@@ -720,7 +725,10 @@ func processTask(ctx context.Context, q *pb.Query, gid uint32) (*pb.Result, erro
 	if !groups().ServesTablet(q.Attr) {
 		return &emptyResult, errUnservedTablet
 	}
-	qs := queryState{cache: posting.Oracle().CacheAt(q.ReadTs)}
+	var qs queryState
+	if q.Cache == UseTxnCache {
+		qs.cache = posting.Oracle().CacheAt(q.ReadTs)
+	}
 	if qs.cache == nil {
 		qs.cache = posting.NewLocalCache()
 	}

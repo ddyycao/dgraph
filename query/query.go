@@ -162,6 +162,7 @@ type Function struct {
 // client convenient formats, like GraphQL / JSON.
 type SubGraph struct {
 	ReadTs       uint64
+	Cache        int
 	Attr         string
 	Params       params
 	counts       []uint32
@@ -993,6 +994,7 @@ func createTaskQuery(sg *SubGraph) (*pb.Query, error) {
 	}
 	out := &pb.Query{
 		ReadTs:       sg.ReadTs,
+		Cache:        int32(sg.Cache),
 		Attr:         attr,
 		Langs:        sg.Params.Langs,
 		Reverse:      reverse,
@@ -1316,8 +1318,7 @@ func (sg *SubGraph) updateUidMatrix() {
 			// We can't do intersection directly as the list is not sorted by UIDs.
 			// So do filter.
 			algo.ApplyFilter(l, func(uid uint64, idx int) bool {
-				i := algo.IndexOf(sg.DestUIDs, uid) // Binary search.
-				return i >= 0
+				return algo.IndexOf(sg.DestUIDs, uid) >= 0 // Binary search.
 			})
 		} else {
 			// If we didn't order on UIDmatrix, it'll be sorted.
@@ -1700,12 +1701,12 @@ func (sg *SubGraph) ApplyIneqFunc() error {
 }
 
 func (sg *SubGraph) appendDummyValues() {
-	if sg.SrcUIDs == nil {
+	if sg.SrcUIDs == nil || len(sg.SrcUIDs.Uids) == 0 {
 		return
 	}
 	var l pb.List
 	var val pb.ValueList
-	for i := 0; i < len(sg.SrcUIDs.Uids); i++ {
+	for range sg.SrcUIDs.Uids {
 		// This is necessary so that preTraverse can be processed smoothly.
 		sg.uidMatrix = append(sg.uidMatrix, &l)
 		sg.valueMatrix = append(sg.valueMatrix, &val)
@@ -2442,6 +2443,7 @@ func ConvertUidsToHex(m map[string]uint64) map[string]string {
 // and schemaUpdate are filled when processing query.
 type QueryRequest struct {
 	ReadTs   uint64
+	Cache    int
 	Latency  *Latency
 	GqlQuery *gql.Result
 
@@ -2475,6 +2477,7 @@ func (req *QueryRequest) ProcessQuery(ctx context.Context) (err error) {
 		}
 		sg.recurse(func(sg *SubGraph) {
 			sg.ReadTs = req.ReadTs
+			sg.Cache = req.Cache
 		})
 		span.Annotate(nil, "Query parsed")
 		req.Subgraphs = append(req.Subgraphs, sg)
